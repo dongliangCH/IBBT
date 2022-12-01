@@ -105,28 +105,27 @@ gm = gmdistribution(mu,sigma,p);
 for mc = 1:size(P0,2)
     x_MC = zeros(nx, N+1);
     x_MC(:,1) = P0(:, mc);
-%     W = random(gm, N);
-%     % W = randn(nw, N);
+    W = random(gm, N);   
+    % W = randn(nw, N); 
     for i=1:N
-%         w = W(i,:)';
-        w = random(gm, 1)';
+        w = W(i,:)';
+%         w = random(gm, 1)';
         u = U(i) - K(:,:,i)*(x_MC(:,i)-xbar(:,i));
         x_MC(:,i+1) = x_MC(:,i) + [cos(x_MC(3,i)); sin(x_MC(3,i)); u]*dt + Gk*w;
     end
 
     hold on
-    plot( x_MC(1,:), x_MC(2,:), 'color', 0.6 * ones(3, 1));    
+    plot( x_MC(1,:), x_MC(2,:), 'color', 0.6 * ones(3, 1)); 
     if MeanCollisionCheck(x_MC(1:2,:), world, 2)
         collision = collision + 1;
     else
-        x0_mc = [x0_mc x_MC(:,end)];
+        x0_mc = [x0_mc x_MC(:,end)];     
     end
-    if collision > 10
-        break
-    end
+%     if collision > 10
+%         break
+%     end
 end
 plot( xbar(1,:), xbar(2,:), 'color', 'r');
-CollisonProb = 1-size(x0_mc,2)/100;
 x0_mc = x0_mc';
 
 end

@@ -84,14 +84,15 @@ mu = [0.5 0.5 0; -0.5 -0.5 0];
 sigma = cat(3, diag([0.06, 0.04, 0.02]), diag([0.04, 0.06, 0.04]));
 p  = [0.5 0.5];
 gm = gmdistribution(mu,sigma,p);
-W = random(gm, N);
+% W = random(gm, N);
 for mc = 1:size(P0,2)
     x_MC = zeros(nx, N+1);
     x_MC(:,1) = P0(:, mc);
-%     W = random(gm, N);
+    W = random(gm, N)';
     % W = randn(nw, N);
     for i=1:N
-        w = W(i,:)';
+        w = W(:,i);
+%         w = random(gm, 1)';
         u = U(i) - K(:,:,i)*(x_MC(:,i)-xbar(:,i));
         x_MC(:,i+1) = x_MC(:,i) + [cos(x_MC(3,i)); sin(x_MC(3,i)); u]*dt + Gk*w;
     end
@@ -103,7 +104,7 @@ for mc = 1:size(P0,2)
     else
         x0_mc = [x0_mc x_MC(:,end)];
     end
-    if collision > 10
+    if collision > 15
         break
     end
 end

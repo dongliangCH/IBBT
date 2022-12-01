@@ -13,7 +13,7 @@ world = createKnownWorld(dim);               % Create random world
 param.dt = 0.1;
 param.velavg = 1;
 param.radi = 1;
-param.chanceConstraint = 0.1;
+param.chanceConstraint = 0.15;
 
 r = 6;                                       % Neighbor distance
 segmentLength = 5.9;                         % Maximum steplength
@@ -171,19 +171,19 @@ toc
 %     end  
 % end
 
-PathCost = [];
-for i = 1:size(BeliefNodes{2},2)
-    PathCost(i) = BeliefNodes{2}{i}{3}(2);
-end
-[~, idx] = min(PathCost);
-goal_idx = [2; idx];
-Path_idx = findpath(BeliefNodes, goal_idx);
-figure(2); hold on
-plot(start_cord(1), start_cord(2), 'Marker','s','MarkerSize',10,'MarkerEdgeColor','[0.8500 0.3250 0.0980]','MarkerFaceColor','[0.8500 0.3250 0.0980]')
-plotWorld(world, dim); 
-
-MC_path(Vertices, BeliefNodes, Path_idx, param, world);
-plot_path(Vertices, Path_idx, param);
+% PathCost = [];
+% for i = 1:size(BeliefNodes{2},2)
+%     PathCost(i) = BeliefNodes{2}{i}{3}(2);
+% end
+% [~, idx] = min(PathCost);
+% goal_idx = [2; idx];
+% Path_idx = findpath(BeliefNodes, goal_idx);
+% figure(2); hold on
+% plot(start_cord(1), start_cord(2), 'Marker','s','MarkerSize',10,'MarkerEdgeColor','[0.8500 0.3250 0.0980]','MarkerFaceColor','[0.8500 0.3250 0.0980]')
+% plotWorld(world, dim); 
+% 
+% MC_path(Vertices, BeliefNodes, Path_idx, param, world);
+% plot_path(Vertices, Path_idx, param);
 
 
 
