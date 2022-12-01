@@ -72,7 +72,6 @@ Vertices = [pos,vel];
 
 % Vertices = [ start_cord; goal_cord; deter_Vertices(2:samples, :)];                       % start_cord already in deter_vertices
        
-
 Vertices = Vertices(arrayfun(@(x,y) ~collision_point([x,y], world), Vertices(:,1), Vertices(:,2)), :);
 D = squareform(pdist(Vertices(:,1:2)));                                  % distance matrix
 N = size(Vertices,1);
@@ -91,10 +90,11 @@ for i = 1:N
         end
     end
 end
+toc
 
 CostValue = [];
 CostValue = VI(Vertices, Edges, EdgesCost, CostValue);
-
+toc
 
 node_init(1) = {P0}; node_init(2) = {PtildePrior0};                 % node state covariance, estimation error covariance,
 node_init(3) = {[0, CostValue(1)]};                                 % cost=[cost-to-come, g]
