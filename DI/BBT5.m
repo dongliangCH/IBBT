@@ -98,19 +98,12 @@ BeliefNodes{1,1} = {node_init};
 %% Iteratively search the graph
 Belief_queue_current = {node_init}; Belief_queue_next = {};
 queue_size_current = size(Belief_queue_current, 2);
-max_iter = 20; counter = 0; 
-max_inner_iter = 6; inner_counter = 0;
 Time = []; BeliefTrees = {}; TreesVertices = {}; Connected_flag = 0;
 
 tic
 while queue_size_current > 0
     
-    [Belief_queue_next, BeliefNodes, success] = SearchGraph(Edges, EdgesCost, CostValue, Edges_data, Belief_queue_current, Belief_queue_next, BeliefNodes, param, world);
-
-%     counter = counter + 1;    
-%     if counter > max_iter
-%         break;
-%     end
+    [Belief_queue_current, BeliefNodes, success] = SearchGraph(Edges, EdgesCost, CostValue, Edges_data, Belief_queue_current, BeliefNodes, param, world);
     
     if success       
         Time = [Time toc];
@@ -119,15 +112,9 @@ while queue_size_current > 0
         break;
     end 
     
-%     inner_counter = inner_counter + 1;
-%     % add new batch
-%     if inner_counter > max_inner_iter && size(Vertices, 1) < 80        
-%         [Vertices, Edges, Edges_data, Belief_queue_next]= RRGD(Vertices, Edges, Edges_data, Belief_queue_next, BeliefNodes, samples, deter_vertix, dim, segmentLength, r, world, param);   
-%         inner_counter = 0;
-%     end
-    
-    Belief_queue_current = Belief_queue_next;
-    Belief_queue_next = {};
+%     % add new batch   
+%     [Vertices, Edges, Edges_data, Belief_queue_next]= RRGD(Vertices, Edges, Edges_data, Belief_queue_next, BeliefNodes, samples, deter_vertix, dim, segmentLength, r, world, param);   
+
     queue_size_current = size(Belief_queue_current, 2);    
 
 end
@@ -154,70 +141,71 @@ plot_path(Vertices, BeliefNodes, Path_idx, param, world);
 
 
 %% Iteratively Search the graph
-function [Belief_queue_current, BeliefNodes, success] = SearchGraph(Edges, EdgesCost, CostValue, Edges_data, Belief_queue_current, Belief_queue_next, BeliefNodes, param, world)
-                queue_size = size(Belief_queue_current, 2);
-                success = 0;
-                    Cost = [];
-                    for j = 1:queue_size
-                        Cost(j) = Belief_queue_current{j}{3}(2);
-                    end
-                    [min_cost, cost_idx] = min(Cost);
-                    pop_node = Belief_queue_current{cost_idx};
-                    vertix_idx = pop_node{5}(1); 
-                    if vertix_idx == 2
-                        success = 1;
-                        return
-                    end
-                    Belief_queue_current = {Belief_queue_current{1:cost_idx-1}, Belief_queue_current{cost_idx+1 : queue_size}};
+function [Belief_queue_current, BeliefNodes, success] = SearchGraph(Edges, EdgesCost, CostValue, Edges_data, Belief_queue_current, BeliefNodes, param, world)
+    Belief_queue_new = {};
+    queue_size = size(Belief_queue_current, 2);
+    success = 0;
+    Cost = [];
+    for j = 1:queue_size
+        Cost(j) = Belief_queue_current{j}{3}(2);
+    end
+    [min_cost, cost_idx] = min(Cost);
+    pop_node = Belief_queue_current{cost_idx};
+    vertix_idx = pop_node{5}(1); 
+    if vertix_idx == 2
+        success = 1;
+        return
+    end
+    Belief_queue_current = {Belief_queue_current{1:cost_idx-1}, Belief_queue_current{cost_idx+1 : queue_size}};
                     
                                        
-                    for j = 1:size(Edges{vertix_idx},2)   % neighbor of vertix vertix_idx  
+    for j = 1:size(Edges{vertix_idx},2)   % neighbor of vertix vertix_idx  
                         
-                        if ~isempty(pop_node{4})
-                            if find(pop_node{4}(1,:) == Edges{vertix_idx}(j),1)
-                                continue;
-                            end
-                        end   
+        if ~isempty(pop_node{4})
+            if find(pop_node{4}(1,:) == Edges{vertix_idx}(j),1)   % find Edges{vertix_idx}(j) in pop_node{4}(1,:), pop_node has already been expand to Edges{vertix_idx}(j)
+               continue;
+            end
+        end   
                         
-                        [meanTraj, N] = Edges_data{vertix_idx, Edges{vertix_idx}(j)}{1:end};
-                        MCost = EdgesCost{vertix_idx}(j);
-                        [endP0, endPtilde, CovCost, CollisionProb, ~] = propagate( pop_node{1}, pop_node{2}, N, param, meanTraj, world );    
-                        CovCost = 0;
-%                         CollisionProb = 0;
-                        if CollisionProb <= param.chanceConstraint
-                            cost_to_come = [pop_node{3}(1) + MCost + CovCost, pop_node{3}(1) + MCost + CovCost + CostValue(Edges{vertix_idx}(j))];
-                            if isempty(BeliefNodes{Edges{vertix_idx}(j)})   % Edges{vertix_idx}(j) is the newly added vertix, there is no node at this vertix and the new node is directly added              
-                                % plotCovariance(meanTraj(:,end), endP0);
-                                BeliefNodes{Edges{vertix_idx}(j), 1} = {{endP0, endPtilde, cost_to_come, [], [Edges{vertix_idx}(j); 1], [pop_node{5}(1); pop_node{5}(2)]}};
-                                % update child list
-                                BeliefNodes{pop_node{5}(1)}{pop_node{5}(2)}{4} = [BeliefNodes{pop_node{5}(1)}{pop_node{5}(2)}{4} [Edges{vertix_idx}(j); 1]];
+        [meanTraj, N] = Edges_data{vertix_idx, Edges{vertix_idx}(j)}{1:end};
+        MCost = EdgesCost{vertix_idx}(j);
+        [endP0, endPtilde, CovCost, CollisionProb, ~] = propagate( pop_node{1}, pop_node{2}, N, param, meanTraj, world );    
+        CovCost = 0;
+%         CollisionProb = 0;
+        if CollisionProb <= param.chanceConstraint            
+            cost_to_come = [pop_node{3}(1) + MCost + CovCost, pop_node{3}(1) + MCost + CovCost + CostValue(Edges{vertix_idx}(j))];
+            if isempty(BeliefNodes{Edges{vertix_idx}(j)})   % there is no belief node at Edges{vertix_idx}(j), the new node is directly added              
+                % plotCovariance(meanTraj(:,end), endP0);
+                BeliefNodes{Edges{vertix_idx}(j), 1} = {{endP0, endPtilde, cost_to_come, [], [Edges{vertix_idx}(j); 1], [pop_node{5}(1); pop_node{5}(2)]}};
+                % update child list
+                BeliefNodes{pop_node{5}(1)}{pop_node{5}(2)}{4} = [BeliefNodes{pop_node{5}(1)}{pop_node{5}(2)}{4} [Edges{vertix_idx}(j); 1]];
                                 
-                                Belief_queue_next = [Belief_queue_next(), BeliefNodes{Edges{vertix_idx}(j)}];
-                            else
-                                % check if the new node is dominated by any existing node at that vertix
-                                dominated = 0;
-                                for m = 1:size(BeliefNodes{Edges{vertix_idx}(j)},2)
-                                    if ~isempty(BeliefNodes{Edges{vertix_idx}(j)}{m})
-                                    if cost_to_come(1) + 0.01 > BeliefNodes{Edges{vertix_idx}(j)}{m}{3}(1) && ...
-                                        ~MatrixNotPD(endP0(1:2,1:2) + 0.01 * eye(2) - BeliefNodes{Edges{vertix_idx}(j)}{m}{1}(1:2,1:2)) && ...
-                                        ~MatrixNotPD(endPtilde(1:2,1:2) + 0.01 * eye(2) - BeliefNodes{Edges{vertix_idx}(j)}{m}{2}(1:2,1:2))               
-                                        dominated = 1;
-                                        break;
-                                    end
-                                    end
-                                end
-                                % if the new node is not dominated, add it to the tree
-                                if dominated == 0
-                                    % plotCovariance(meanTraj(:,end), endP0);
-                                    col_idx = size(BeliefNodes{Edges{vertix_idx}(j)},2) + 1;
-                                    BeliefNodes{Edges{vertix_idx}(j), 1}(col_idx) = {{endP0, endPtilde, cost_to_come, [], [Edges{vertix_idx}(j); col_idx], [pop_node{5}(1); pop_node{5}(2)]}};
-                                    % update child list
-                                    BeliefNodes{pop_node{5}(1)}{pop_node{5}(2)}{4} = [BeliefNodes{pop_node{5}(1)}{pop_node{5}(2)}{4} [Edges{vertix_idx}(j); col_idx]];
-                                    
-                                    Belief_queue_next = [Belief_queue_next(), BeliefNodes{Edges{vertix_idx}(j)}(end)];                               
-                                end
-                            end 
-                        end                        
+                Belief_queue_new = [Belief_queue_new(), BeliefNodes{Edges{vertix_idx}(j)}];
+            else
+                % check if the new node is dominated by any existing node at that vertix
+                dominated = 0;
+                for m = 1:size(BeliefNodes{Edges{vertix_idx}(j)},2)
+                    if ~isempty(BeliefNodes{Edges{vertix_idx}(j)}{m})
+                       if cost_to_come(1) + 0.01 > BeliefNodes{Edges{vertix_idx}(j)}{m}{3}(1) && ...
+                           ~MatrixNotPD(endP0(1:2,1:2) + 0.01 * eye(2) - BeliefNodes{Edges{vertix_idx}(j)}{m}{1}(1:2,1:2)) && ...
+                           ~MatrixNotPD(endPtilde(1:2,1:2) + 0.01 * eye(2) - BeliefNodes{Edges{vertix_idx}(j)}{m}{2}(1:2,1:2))               
+                           dominated = 1;
+                           break;
+                       end
                     end
-                    Belief_queue_current = [Belief_queue_current(), Belief_queue_next()];
+                end
+                % if the new node is not dominated, add it to the tree
+                if dominated == 0
+                    % plotCovariance(meanTraj(:,end), endP0);
+                    col_idx = size(BeliefNodes{Edges{vertix_idx}(j)},2) + 1;
+                    BeliefNodes{Edges{vertix_idx}(j), 1}(col_idx) = {{endP0, endPtilde, cost_to_come, [], [Edges{vertix_idx}(j); col_idx], [pop_node{5}(1); pop_node{5}(2)]}};
+                    % update child list
+                    BeliefNodes{pop_node{5}(1)}{pop_node{5}(2)}{4} = [BeliefNodes{pop_node{5}(1)}{pop_node{5}(2)}{4} [Edges{vertix_idx}(j); col_idx]];
+                                    
+                    Belief_queue_new = [Belief_queue_new(), BeliefNodes{Edges{vertix_idx}(j)}(end)];                               
+                end
+            end 
+        end                        
+    end
+    Belief_queue_current = [Belief_queue_current(), Belief_queue_new()];
 end
