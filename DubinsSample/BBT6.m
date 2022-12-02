@@ -6,19 +6,25 @@ rng(0);
 dim = 2;   
 
 start_cord = [3,8,pi/6];                     % start_cord = [9,6,0];
-goal_cord = [18,18,0];                       % goal_cord = [17,18,0];
+goal_cord = [18,18,pi/3];                       % goal_cord = [17,18,0];
 
 world = createKnownWorld(dim);               % Create random world
 
 param.dt = 0.1;
 param.velavg = 1;
 param.radi = 1;
+param.mc_num = 100;
 param.chanceConstraint = 0.15;
+mu = [0.5 0.5 0; -0.5 -0.5 0];
+sigma = cat(3, diag([0.06, 0.04, 0.02]), diag([0.04, 0.06, 0.04]));
+p  = [0.5 0.5];
+gm_w = gmdistribution(mu,sigma,p);
+% param.gm_w = gm_w;
 
 r = 6;                                       % Neighbor distance
 segmentLength = 5.9;                         % Maximum steplength
 
-samples = 100;
+samples = 300;
 Edges = cell(500,1);
 EdgesCost = cell(500,1);
 BeliefNodes = cell(500,1);
@@ -63,12 +69,11 @@ for l = 1:samples
 end
 vel = [start_cord(3); goal_cord(3); rand(samples, 1)*2*pi];
 Vertices = [pos,vel];
-
+toc
 % Vertices = [ start_cord; goal_cord; [rand(samples, 2)*20, rand(samples, 2)*2*pi]]; 
 
 % Vertices = [ start_cord; goal_cord; deter_Vertices(2:samples, :)];                       % start_cord already in deter_vertices
        
-
 Vertices = Vertices(arrayfun(@(x,y) ~collision_point([x,y], world), Vertices(:,1), Vertices(:,2)), :);
 D = squareform(pdist(Vertices(:,1:2)));                                  % distance matrix
 N = size(Vertices,1);
@@ -84,13 +89,13 @@ for i = 1:N
             Edges(i) = {[Edges{i} child_idx]};
             EdgesCost{i} = [EdgesCost{i} MCost];
             Edges_data{i, child_idx} = {meanTraj};
-%             plot(meanTraj(1,:), meanTraj(2,:), 'color', 'g', 'LineWidth', 1);
-%             plot(meanTraj(1,1), meanTraj(2,1), 'Marker','.','MarkerSize',8,'MarkerEdgeColor','[0.5 0.5 0.5]')
+            plot(meanTraj(1,:), meanTraj(2,:), 'color', 'g', 'LineWidth', 1);
+            plot(meanTraj(1,1), meanTraj(2,1), 'Marker','.','MarkerSize',8,'MarkerEdgeColor','[0.5 0.5 0.5]')
         end
     end
 end
-
 toc
+
 CostValue = [];
 CostValue = VI(Vertices, Edges, EdgesCost, CostValue);
 toc
@@ -105,13 +110,13 @@ mu = [start_cord + [0.4 0.4 0]; start_cord + [-0.4 -0.4 0]];
 sigma = cat(3, diag([0.06, 0.04, 0.04]), diag([0.04, 0.06, 0.04]));
 p  = [0.5 0.5];
 gm = gmdistribution(mu,sigma,p);
-mc_num = 100;
+mc_num = param.mc_num;
 x0_mc = random(gm,mc_num);
 % scatter(x0_mc(:,1),x0_mc(:,2),16,'.')
-
 Pe_0 = cov(x0_mc);
+param.noise_w = random(gm_w, param.mc_num*30)';
 
-node_init(1) = {x0_mc}; node_init(2) = {Pe_0};                     % node state samples, sample covariance,
+node_init(1) = {x0_mc}; node_init(2) = {Pe_0};                      % node state samples, sample covariance,
 node_init(3) = {[0, CostValue(1)]};                                 % cost=[cost-to-come, g]
 node_init(4) = {[]}; node_init(5) = {[1;1]}; node_init(6) = {[]};   % children node idx, coordinate in BeliefNodes, parent_node idx
 BeliefNodes{1,1} = {node_init};
@@ -171,19 +176,19 @@ toc
 %     end  
 % end
 
-% PathCost = [];
-% for i = 1:size(BeliefNodes{2},2)
-%     PathCost(i) = BeliefNodes{2}{i}{3}(2);
-% end
-% [~, idx] = min(PathCost);
-% goal_idx = [2; idx];
-% Path_idx = findpath(BeliefNodes, goal_idx);
-% figure(2); hold on
-% plot(start_cord(1), start_cord(2), 'Marker','s','MarkerSize',10,'MarkerEdgeColor','[0.8500 0.3250 0.0980]','MarkerFaceColor','[0.8500 0.3250 0.0980]')
-% plotWorld(world, dim); 
-% 
-% MC_path(Vertices, BeliefNodes, Path_idx, param, world);
-% plot_path(Vertices, Path_idx, param);
+PathCost = [];
+for i = 1:size(BeliefNodes{2},2)
+    PathCost(i) = BeliefNodes{2}{i}{3}(2);
+end
+[~, idx] = min(PathCost);
+goal_idx = [2; idx];
+Path_idx = findpath(BeliefNodes, goal_idx);
+figure(2); hold on
+plot(start_cord(1), start_cord(2), 'Marker','s','MarkerSize',10,'MarkerEdgeColor','[0.8500 0.3250 0.0980]','MarkerFaceColor','[0.8500 0.3250 0.0980]')
+plotWorld(world, dim); 
+
+MC_path(Vertices, BeliefNodes, Path_idx, param, world);
+plot_path(Vertices, Path_idx, param);
 
 
 
@@ -216,7 +221,7 @@ function [Belief_queue_current, BeliefNodes, success] = SearchGraph(Edges, Edges
                         
         meanTraj = Edges_data{vertix_idx, Edges{vertix_idx}(j)}{1:end};
         MCost = EdgesCost{vertix_idx}(j);
-        [x0_mc, Pe_0, CovCost, CollisionProb, ~] = propagate( pop_node{1}, pop_node{2}, param, meanTraj, world );    
+        [x0_mc, Pe_0, CovCost, CollisionProb, ~] = propagate1( pop_node{1}, pop_node{2}, param, meanTraj, world );    
         CovCost = 0;
 %         CollisionProb = 0;
         if CollisionProb <= param.chanceConstraint

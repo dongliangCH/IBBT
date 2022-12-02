@@ -1,4 +1,4 @@
-function [x0_mc, Pe_0, CovCost, CollisonProb, K] = propagate(P0, PtildePrior0, param, Traj, world)
+function [x0_mc, Pe_0, CovCost, CollisonProb, K] = propagate1(P0, PtildePrior0, param, Traj, world)
 
 % Notation: Ak is single step of matrix, AA is 3d array with each Ak
 % stacked in the 3rd dimension, A is block matrix
@@ -80,22 +80,21 @@ x0_mc = [];
 collision = 0;
 P0 = P0';
 
-mu = [0.5 0.5 0; -0.5 -0.5 0];
-sigma = cat(3, diag([0.06, 0.04, 0.02]), diag([0.04, 0.06, 0.04]));
-p  = [0.5 0.5];
-gm = gmdistribution(mu,sigma,p);
+% gm = param.gm_w;
 num = size(P0,2);
-W = random(gm, num*N)';
+% W = random(gm, num*N)';
+W = param.noise_w;
+noise_num = size(W,2);
 counter = 1;
 for mc = 1:num
     x_MC = zeros(nx, N+1);
     x_MC(:,1) = P0(:, mc);
-    % W = random(gm, N)';
-    % W = randn(nw, N);
     for i=1:N
+        if counter > noise_num
+            counter = 1;
+        end
         w = W(:, counter);
         counter = counter + 1;
-%         w = random(gm, 1)';
         u = U(i) - K(:,:,i)*(x_MC(:,i)-xbar(:,i));
         x_MC(:,i+1) = x_MC(:,i) + [cos(x_MC(3,i)); sin(x_MC(3,i)); u]*dt + Gk*w;
     end
@@ -107,7 +106,7 @@ for mc = 1:num
     else
         x0_mc = [x0_mc x_MC(:,end)];
     end
-    if collision > 15
+    if collision > param.mc_num*param.chanceConstraint
         break
     end
 end
