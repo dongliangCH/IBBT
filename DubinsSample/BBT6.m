@@ -69,7 +69,7 @@ for l = 1:samples
 end
 vel = [start_cord(3); goal_cord(3); rand(samples, 1)*2*pi];
 Vertices = [pos,vel];
-toc
+
 % Vertices = [ start_cord; goal_cord; [rand(samples, 2)*20, rand(samples, 2)*2*pi]]; 
 
 % Vertices = [ start_cord; goal_cord; deter_Vertices(2:samples, :)];                       % start_cord already in deter_vertices
@@ -89,8 +89,8 @@ for i = 1:N
             Edges(i) = {[Edges{i} child_idx]};
             EdgesCost{i} = [EdgesCost{i} MCost];
             Edges_data{i, child_idx} = {meanTraj};
-            plot(meanTraj(1,:), meanTraj(2,:), 'color', 'g', 'LineWidth', 1);
-            plot(meanTraj(1,1), meanTraj(2,1), 'Marker','.','MarkerSize',8,'MarkerEdgeColor','[0.5 0.5 0.5]')
+%             plot(meanTraj(1,:), meanTraj(2,:), 'color', 'g', 'LineWidth', 1);
+%             plot(meanTraj(1,1), meanTraj(2,1), 'Marker','.','MarkerSize',8,'MarkerEdgeColor','[0.5 0.5 0.5]')
         end
     end
 end
@@ -141,11 +141,11 @@ while queue_size_current > 0
     queue_size_current = size(Belief_queue_current, 2);    
 
 end
-%     PathCost = [];
-%     for i = 1:size(BeliefNodes{2},2)
-%         PathCost(i) = BeliefNodes{2}{i}{3}(2);
-%     end
-% 
+    PathCost = [];
+    for i = 1:size(BeliefNodes{2},2)
+        PathCost(i) = BeliefNodes{2}{i}{3}(2);
+    end
+
 % %     [~, idx] = min(PathCost);
 % %     goal_idx = [2; idx];
 % %     Path_idx = findpath(BeliefNodes, goal_idx);
@@ -176,19 +176,19 @@ toc
 %     end  
 % end
 
-PathCost = [];
-for i = 1:size(BeliefNodes{2},2)
-    PathCost(i) = BeliefNodes{2}{i}{3}(2);
-end
-[~, idx] = min(PathCost);
-goal_idx = [2; idx];
-Path_idx = findpath(BeliefNodes, goal_idx);
-figure(2); hold on
-plot(start_cord(1), start_cord(2), 'Marker','s','MarkerSize',10,'MarkerEdgeColor','[0.8500 0.3250 0.0980]','MarkerFaceColor','[0.8500 0.3250 0.0980]')
-plotWorld(world, dim); 
-
-MC_path(Vertices, BeliefNodes, Path_idx, param, world);
-plot_path(Vertices, Path_idx, param);
+% PathCost = [];
+% for i = 1:size(BeliefNodes{2},2)
+%     PathCost(i) = BeliefNodes{2}{i}{3}(2);
+% end
+% [~, idx] = min(PathCost);
+% goal_idx = [2; idx];
+% Path_idx = findpath(BeliefNodes, goal_idx);
+% figure(2); hold on
+% plot(start_cord(1), start_cord(2), 'Marker','s','MarkerSize',10,'MarkerEdgeColor','[0.8500 0.3250 0.0980]','MarkerFaceColor','[0.8500 0.3250 0.0980]')
+% plotWorld(world, dim); 
+% 
+% MC_path(Vertices, BeliefNodes, Path_idx, param, world);
+% plot_path(Vertices, Path_idx, param);
 
 
 
