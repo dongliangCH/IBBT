@@ -15,7 +15,7 @@ world = createKnownWorld(dim);               % Create random world
 param.dt = 0.1;
 param.velavg = 1;
 param.radi = 1;
-param.mc_num = 100;
+param.mc_num = 50;
 param.chanceConstraint = 0.15;
 mu = [0.5 0.5 0; -0.5 -0.5 0];
 sigma = cat(3, diag([0.06, 0.04, 0.02]), diag([0.04, 0.06, 0.04]));
@@ -26,7 +26,7 @@ gm_w = gmdistribution(mu,sigma,p);
 r = 6;                                       % Neighbor distance
 segmentLength = 5.9;                         % Maximum steplength
 
-samples = 200;
+samples = 50;
 Edges = cell(500,1);
 EdgesCost = cell(500,1);
 BeliefNodes = cell(500,1);
@@ -35,7 +35,7 @@ BeliefNodes = cell(500,1);
 TimeM = [];
 CostM = [];
 tic
-%% Sampling
+%%
 % pos = [start_cord(1:2); goal_cord(1:2)];
 % for l = 1:samples
 %     sample_succ = 0;
@@ -75,24 +75,23 @@ tic
 % Vertices = [pos, vel*pi/2];
 
 pos = [start_cord(1:2); goal_cord(1:2)];
-i_c = 1;
+vel = [start_cord(3); goal_cord(3)]/pi*2;
 for l = 1:samples
     min_dist = 0;
     while min_dist < 0.5
-        randomPoint = 2 + rand_pos(i_c,:)*16;
-        i_c = i_c + 1;
+        randomPoint = 2 + pos_rand(1,2)*16;
         [min_dist, ~] = min(sum((pos - randomPoint).^2,2)); % find the vertix that is closest to randomPoint
     end   
     pos = [pos; randomPoint];
+    vel = [vel; rand];
 end
-vel = [start_cord(3); goal_cord(3); rand_vel(1:samples)*pi/2];
-Vertices = [pos, vel];
+Vertices = [pos, vel*pi/2];
 
 % Vertices = [ start_cord; goal_cord; [rand(samples, 2)*20, rand(samples, 2)*2*pi]]; 
 
 % Vertices = [ start_cord; goal_cord; deter_Vertices(2:samples, :)];                       % start_cord already in deter_vertices
 
-%% Nominal trajectory graph      
+%%       
 Vertices = Vertices(arrayfun(@(x,y) ~collision_point([x,y], world), Vertices(:,1), Vertices(:,2)), :);
 D = squareform(pdist(Vertices(:,1:2)));                                  % distance matrix
 N = size(Vertices,1);
@@ -195,19 +194,19 @@ toc
 %     end  
 % end
 
-PathCost = [];
-for i = 1:size(BeliefNodes{2},2)
-    PathCost(i) = BeliefNodes{2}{i}{3}(2);
-end
-[~, idx] = min(PathCost);
-goal_idx = [2; idx];
-Path_idx = findpath(BeliefNodes, goal_idx);
-figure(2); hold on
-plot(start_cord(1), start_cord(2), 'Marker','s','MarkerSize',10,'MarkerEdgeColor','[0.8500 0.3250 0.0980]','MarkerFaceColor','[0.8500 0.3250 0.0980]')
-plotWorld(world, dim); 
-
-MC_path(Vertices, BeliefNodes, Path_idx, param, world);
-plot_path(Vertices, Path_idx, param);
+% PathCost = [];
+% for i = 1:size(BeliefNodes{2},2)
+%     PathCost(i) = BeliefNodes{2}{i}{3}(2);
+% end
+% [~, idx] = min(PathCost);
+% goal_idx = [2; idx];
+% Path_idx = findpath(BeliefNodes, goal_idx);
+% figure(2); hold on
+% plot(start_cord(1), start_cord(2), 'Marker','s','MarkerSize',10,'MarkerEdgeColor','[0.8500 0.3250 0.0980]','MarkerFaceColor','[0.8500 0.3250 0.0980]')
+% plotWorld(world, dim); 
+% 
+% MC_path(Vertices, BeliefNodes, Path_idx, param, world);
+% plot_path(Vertices, Path_idx, param);
 
 
 
@@ -242,7 +241,7 @@ function [Belief_queue_current, BeliefNodes, success] = SearchGraph(Edges, Edges
         MCost = EdgesCost{vertix_idx}(j);
         [x0_mc, Pe_0, CovCost, CollisionProb, ~] = propagate1( pop_node{1}, pop_node{2}, param, meanTraj, world );    
         CovCost = 0;
-%         CollisionProb = 0;
+        CollisionProb = 0;
         if CollisionProb <= param.chanceConstraint
             cost_to_come = [pop_node{3}(1) + MCost + CovCost, pop_node{3}(1) + MCost + CovCost + CostValue(Edges{vertix_idx}(j))];
             if isempty(BeliefNodes{Edges{vertix_idx}(j)})   % Edges{vertix_idx}(j) is the newly added vertix, there is no node at this vertix and the new node is directly added              
