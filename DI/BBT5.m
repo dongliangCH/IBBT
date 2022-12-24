@@ -1,7 +1,7 @@
 clear
 addpath('CS');
-deter_vertix = load('deterministicVertices1');
-deter_Vertices = deter_vertix.Vertices;
+% deter_vertix = load('deterministicVertices1');
+% deter_Vertices = deter_vertix.Vertices;
 rng(0);
 dim = 2;   
 
@@ -22,9 +22,9 @@ r = 6;                                       % Neighbor distance
 segmentLength = 5.8;                         % Maximum steplength
 
 samples = 30;
-Edges = cell(100,1);
-EdgesCost = cell(100,1);
-BeliefNodes = cell(100,1);
+Edges = cell(200,1);
+EdgesCost = cell(200,1);
+BeliefNodes = cell(200,1);
 
 tic
 pos = [start_cord(1:2); goal_cord(1:2)];
@@ -87,7 +87,8 @@ for i = 1:N
 end
 toc
 
-[CostValue, Path] = VI(Vertices, Edges, EdgesCost);
+CostValue = [];
+CostValue = VI(Vertices, Edges, EdgesCost, CostValue);
 toc
 
 node_init(1) = {P0}; node_init(2) = {PtildePrior0};                 % node state covariance, estimation error covariance,
@@ -96,48 +97,77 @@ node_init(4) = {[]}; node_init(5) = {[1;1]}; node_init(6) = {[]};   % children n
 BeliefNodes{1,1} = {node_init};
 
 %% Iteratively search the graph
-Belief_queue_current = {node_init}; Belief_queue_next = {};
+Belief_queue_current = {node_init};
 queue_size_current = size(Belief_queue_current, 2);
-Time = []; BeliefTrees = {}; TreesVertices = {}; Connected_flag = 0;
+CostM = []; Time = []; BeliefTrees = {}; TreesVertices = {}; Connected_flag = 0;
 
-tic
-while queue_size_current > 0
-    
-    [Belief_queue_current, BeliefNodes, success] = SearchGraph(Edges, EdgesCost, CostValue, Edges_data, Belief_queue_current, BeliefNodes, param, world);
-    
+while queue_size_current > 0    
+    [Belief_queue_current, BeliefNodes, success] = SearchGraph(Edges, EdgesCost, CostValue, Edges_data, Belief_queue_current, BeliefNodes, param, world);    
     if success       
         Time = [Time toc];
         BeliefTrees = [BeliefTrees {BeliefNodes}];
         TreesVertices = [TreesVertices, {Vertices}];
         break;
     end 
-    
-%     % add new batch   
-%     [Vertices, Edges, Edges_data, Belief_queue_next]= RRGD(Vertices, Edges, Edges_data, Belief_queue_next, BeliefNodes, samples, deter_vertix, dim, segmentLength, r, world, param);   
-
     queue_size_current = size(Belief_queue_current, 2);    
-
 end
 toc   
+PathCost = [];
+for i = 1:size(BeliefNodes{2},2)
+    PathCost(i) = BeliefNodes{2}{i}{3}(2);
+end
+% [~, idx] = min(PathCost);
+% goal_idx = [2; idx];
+% Path_idx = findpath(BeliefNodes, goal_idx);
+% figure(2); hold on
+% plot(start_cord(1), start_cord(2), 'Marker','s','MarkerSize',10,'MarkerEdgeColor','[0.8500 0.3250 0.0980]','MarkerFaceColor','[0.8500 0.3250 0.0980]')
+% plotWorld(world, dim); 
+% 
+% MC_path(Vertices, BeliefNodes, Path_idx, param, world);
+% plot_path(Vertices, BeliefNodes, Path_idx, param, world);
+CostM = [CostM  min(PathCost)];
 
-%%
-% for i = 1:size(Vertices,1)
-%     for j = 1:size(BeliefNodes{i},2)
-%         if ~isempty(BeliefNodes{i}{j})
-%             plotCovariance(Vertices(i,:), BeliefNodes{i}{j}{1});
-%         end
-%     end  
-% end
+for k = 1:2
+    [Vertices, Edges, EdgesCost, Edges_data, Belief_queue_current] = RRGD_Random(Vertices, Edges, EdgesCost, Edges_data, Belief_queue_current, BeliefNodes, 40, dim, segmentLength, r, world, param);
+    CostValue = VI(Vertices, Edges, EdgesCost, CostValue);
+    for i =1:size(Belief_queue_current,2) 
+        Belief_queue_current{i}{3}(2) = Belief_queue_current{i}{3}(1) + CostValue(Belief_queue_current{i}{5}(1));
+    end
 
-BeliefNodes{2}{1}{3}(2)
-goal_idx = [2; 1];
-Path_idx = findpath(BeliefNodes, goal_idx);
-figure(2); hold on
-plot(start_cord(1), start_cord(2), 'Marker','s','MarkerSize',10,'MarkerEdgeColor','[0.8500 0.3250 0.0980]','MarkerFaceColor','[0.8500 0.3250 0.0980]')
-plotWorld(world, dim); 
+    while queue_size_current > 0        
+        [Belief_queue_current, BeliefNodes, success] = SearchGraph(Edges, EdgesCost, CostValue, Edges_data, Belief_queue_current, BeliefNodes, param, world);        
+        if success       
+            Time = [Time toc];
+            BeliefTrees = [BeliefTrees {BeliefNodes}];
+            TreesVertices = [TreesVertices, {Vertices}];
+            break;
+        end        
+        queue_size_current = size(Belief_queue_current, 2);        
+    end
+    PathCost = [];
+    for i = 1:size(BeliefNodes{2},2)
+        PathCost(i) = BeliefNodes{2}{i}{3}(2);
+    end
+    CostM = [CostM  min(PathCost)];
+end
+toc   
+% [~, idx] = min(PathCost);
+% goal_idx = [2; idx];
+% Path_idx = findpath(BeliefNodes, goal_idx);
+% figure(2); hold on
+% plot(start_cord(1), start_cord(2), 'Marker','s','MarkerSize',10,'MarkerEdgeColor','[0.8500 0.3250 0.0980]','MarkerFaceColor','[0.8500 0.3250 0.0980]')
+% plotWorld(world, dim); 
+% 
+% MC_path(Vertices, BeliefNodes, Path_idx, param, world);
+% plot_path(Vertices, BeliefNodes, Path_idx, param, world);
 
-MC_path(Vertices, BeliefNodes, Path_idx, param, world);
-plot_path(Vertices, BeliefNodes, Path_idx, param, world);
+% % for i = 1:size(Vertices,1)
+% %     for j = 1:size(BeliefNodes{i},2)
+% %         if ~isempty(BeliefNodes{i}{j})
+% %             plotCovariance(Vertices(i,:), BeliefNodes{i}{j}{1});
+% %         end
+% %     end  
+% % end
 
 
 %% Iteratively Search the graph

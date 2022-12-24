@@ -1,27 +1,26 @@
-function [Vertices, Edges, EdgesCost, Edges_data, Belief_queue_next]= RRGD_Random(Vertices, Edges, EdgesCost, Edges_data, Belief_queue_next_old, BeliefNodes, ...
-    samples, dim, segmentLength, r, world, param) %, rand_idx, randvel_idx, randM, randMvel)
-
+function [Vertices, Edges, EdgesCost, Edges_data, Belief_queue_next]= RRGD_RandomCopy(Vertices, Edges, EdgesCost, Edges_data, Belief_queue_next_old, BeliefNodes, samples, dim, segmentLength, r, world, param)
+rng(2)
 vertix_number_old = size(Vertices, 1);
 vertices_queue = [];
+
 for k = 1:samples
     sample_succ = 0;
     while sample_succ == 0
-        randomPoint = zeros(1, 4);
+        randomPoint = zeros(1, 3);
         min_dist = 0;
         while min_dist < 0.5
             for j = 1:dim
-                randomPoint(1, j) = world.origincorner(j) + (world.endcorner(j) - world.origincorner(j)) * rand; %randM(rand_idx);
-%                 rand_idx = rand_idx + 1;
+                randomPoint(1, j) = 2 + rand*16;
             end
             % find the vertix that is closest to randomPoint (Eucl. dist. between positions)
             tmp = Vertices(:, 1 : dim) - randomPoint(1 : dim);
             sqr_dist = sqr_eucl_dist(tmp, dim);
             [min_dist, ~] = min(sqr_dist);
         end
-        new_point(1 : dim) = randomPoint(1 : dim);        
+        
+        new_point(1 : dim) = randomPoint(1 : dim);
         if dim == 2
-            new_point(dim + 1 : 2 * dim) = 0.5 * (-1 + (1 - (-1))) * rand; %randMvel(randvel_idx,:);
-%             randvel_idx = randvel_idx + 1;
+            new_point(dim + 1) = rand*pi/2;    
         end
         
         % check if the new_point is in collision
@@ -31,22 +30,24 @@ for k = 1:samples
             dist_sqr = sqr_eucl_dist(tmp_dist, dim);
             % find near neighbors   
             if dim == 2
-                gamma = 60;
+                gamma = 40;
             end      
             nun = size(Vertices, 1);
             ner = gamma * ( log(nun + 1) / nun )^(1 / dim);
             r1 = min(ner, r);    
             near_idx = find(dist_sqr <= r1^2);
-
+                
             Vertices = [Vertices; new_point];
-            new_verti_idx = size(Vertices,1);                        
+            new_verti_idx = size(Vertices,1);
             size_near = size(near_idx, 1);   
             for i = 1 : size_near                                              
-                [meanTraj, MCost, N]  = meanControl(Vertices(near_idx(i), :)', new_point', param);  
+                [meanTraj, MCost] = dubins_curve(Vertices(near_idx(i), :), new_point, param.radi, param.dt, 1);
+                U = (meanTraj(3,2:end) - meanTraj(3,1:end-1))/param.dt;
+                meanTraj = [meanTraj; [U 0]];
                 if ~MeanCollisionCheck(meanTraj(1:2, :), world, dim)
                     Edges(near_idx(i)) = {[Edges{near_idx(i)} new_verti_idx]};
                     EdgesCost{near_idx(i)} = [EdgesCost{near_idx(i)} MCost];
-                    Edges_data{near_idx(i), new_verti_idx} = {meanTraj, N};
+                    Edges_data{near_idx(i), new_verti_idx} = {meanTraj};
 %                     plot(meanTraj(1,:), meanTraj(2,:), 'color', 'g', 'LineWidth', 1);
                     if near_idx(i) <= vertix_number_old
                         if isempty(find (vertices_queue == near_idx(i), 1))
@@ -54,15 +55,16 @@ for k = 1:samples
                         end                                            
                     end                                        
                 end
-                
-                [meanTraj, MCost, N]  = meanControl(new_point', Vertices(near_idx(i), :)', param);  
+                [meanTraj, MCost] = dubins_curve(new_point, Vertices(near_idx(i), :), param.radi, param.dt, 1); 
+                U = (meanTraj(3,2:end) - meanTraj(3,1:end-1))/param.dt;
+                meanTraj = [meanTraj; [U 0]];
                 if ~MeanCollisionCheck(meanTraj(1:2, :), world, dim)
                     Edges(new_verti_idx) = {[Edges{new_verti_idx} near_idx(i)]};
                     EdgesCost{new_verti_idx} = [EdgesCost{new_verti_idx} MCost];
-                    Edges_data{new_verti_idx, near_idx(i)} = {meanTraj, N};
+                    Edges_data{new_verti_idx, near_idx(i)} = {meanTraj};
 %                     plot(meanTraj(1,:), meanTraj(2,:), 'color', 'g', 'LineWidth', 1);
                 end
-            end             
+            end  
         end
     end    
 end
@@ -95,4 +97,5 @@ end
 % for i = length(empty_idx):-1:1
 %     Belief_queue_next = {Belief_queue_next{1:empty_idx(i)-1}, Belief_queue_next{empty_idx(i)+1 : end}};
 % end
+
 end

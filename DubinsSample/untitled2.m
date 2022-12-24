@@ -14,8 +14,14 @@ cost = [33.4835 26.2024 23.3283 20.6551 20.1970 18.9619 18.7065];
 % ylabel('time(s)')
 % set(gca,'FontSize',16,'FontName','Times');
 
+vertices = [50 60 70 80 90 100];
+totaltime1 = [0.513533 0.593168 0.695883 1.029838 1.418207 2.319602];
+cost1 = [31.3923 28.8256 21.8774 21.8774 20.0216 18.8356];
+
 figure
-plot(totaltime, cost)
+plot(totaltime1, cost1, 'LineWidth', 1);hold on
+plot(totaltime, cost, 'LineWidth', 1)
 xlabel('Planning time (s)');
 ylabel('Cost')
 set(gca,'FontSize',16,'FontName','Times');
+

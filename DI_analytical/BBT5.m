@@ -5,12 +5,12 @@ addpath('CS');
 rng(0);
 dim = 2;   
 
-start_cord = [2,8];                          % start_cord = [9,6];
-P0 = diag([0.10, 0.08]);
-PtildePrior0 = 0.6 * P0.* diag([1 1]);       % Initial estimation error covariance
+start_cord = [2,8,0,0];                      % start_cord = [9,6,0,0];
+P0 = diag([0.10, 0.08, 0.01, 0.01]);
+PtildePrior0 = 0.6 * P0.* diag([1 1 1 1]);   % Initial estimation error covariance
 PhatPrior0 = P0 - PtildePrior0;              % Initial estimated state covariance
 
-goal_cord = [18,18];                         % goal_cord = [17,18,0,0];
+goal_cord = [18,18,0,0];                     % goal_cord = [17,18,0,0];
 
 world = createKnownWorld(dim);               % Create random world
 
@@ -21,10 +21,10 @@ param.chanceConstraint = 0.1;
 r = 6;                                       % Neighbor distance
 segmentLength = 5.8;                         % Maximum steplength
 
-samples = 40;
-Edges = cell(300,1);
-EdgesCost = cell(300,1);
-BeliefNodes = cell(300,1);
+samples = 30;
+Edges = cell(200,1);
+EdgesCost = cell(200,1);
+BeliefNodes = cell(200,1);
 
 tic
 pos = [start_cord(1:2); goal_cord(1:2)];
@@ -49,7 +49,8 @@ for l = 1:samples
         end
     end      
 end
-Vertices = pos;
+vel = [start_cord(3:4); goal_cord(3:4); 1-rand(samples, 2)*2];
+Vertices = [pos,vel];
 
 % pos = [start_cord(1:2); goal_cord(1:2)];
 % for l = 1:samples
@@ -60,10 +61,11 @@ Vertices = pos;
 %     end   
 %     pos = [pos; randomPoint];
 % end
-% Vertices = pos;
+% vel = [start_cord(3:4); goal_cord(3:4); 1-rand(samples, 2)*2];
+% Vertices = [pos,vel];
 
-% % Vertices = [start_cord; goal_cord; deter_Vertices(2:samples, :)];                       % start_cord already in deter_vertices
-% Vertices = [start_cord; goal_cord; rand(samples, 2)*20];        
+% % Vertices = [ start_cord; goal_cord; deter_Vertices(2:samples, :)];                       % start_cord already in deter_vertices
+% Vertices = [ start_cord; goal_cord; [rand(samples, 2)*20, 1-rand(samples, 2)*2]];        
 
 Vertices = Vertices(arrayfun(@(x,y) ~collision_point([x,y], world), Vertices(:,1), Vertices(:,2)), :);
 D = squareform(pdist(Vertices(:,1:2)));                                  % distance matrix
@@ -74,7 +76,7 @@ NN = arrayfun(@(v) [idx(D(v,1:v-1) < r), v + idx(D(v,v+1:end) < r)], 1:N, 'unifo
 for i = 1:N
     for child_idx = NN{i}
         [meanTraj, MCost, N]  = meanControl(Vertices(i, :)', Vertices(child_idx, :)', param); 
-        if ~MeanCollisionCheck(meanTraj, world, dim)
+        if ~MeanCollisionCheck(meanTraj(1:2, :), world, dim)
             Edges(i) = {[Edges{i} child_idx]};
             EdgesCost{i} = [EdgesCost{i} MCost];
             Edges_data{i, child_idx} = {meanTraj, N};
@@ -94,7 +96,7 @@ node_init(3) = {[0, CostValue(1)]};                                 % cost=[cost
 node_init(4) = {[]}; node_init(5) = {[1;1]}; node_init(6) = {[]};   % children node idx, coordinate in BeliefNodes, parent_node idx
 BeliefNodes{1,1} = {node_init};
 
-%% graph search
+%% Iteratively search the graph
 Belief_queue_current = {node_init};
 queue_size_current = size(Belief_queue_current, 2);
 CostM = []; Time = []; BeliefTrees = {}; TreesVertices = {}; Connected_flag = 0;
@@ -106,8 +108,8 @@ while queue_size_current > 0
         BeliefTrees = [BeliefTrees {BeliefNodes}];
         TreesVertices = [TreesVertices, {Vertices}];
         break;
-    end     
-    queue_size_current = size(Belief_queue_current, 2); 
+    end 
+    queue_size_current = size(Belief_queue_current, 2);    
 end
 toc   
 PathCost = [];
@@ -149,15 +151,15 @@ for k = 1:2
     CostM = [CostM  min(PathCost)];
 end
 toc   
-% [~, idx] = min(PathCost);
-% goal_idx = [2; idx];
-% Path_idx = findpath(BeliefNodes, goal_idx);
-% figure(2); hold on
-% plot(start_cord(1), start_cord(2), 'Marker','s','MarkerSize',10,'MarkerEdgeColor','[0.8500 0.3250 0.0980]','MarkerFaceColor','[0.8500 0.3250 0.0980]')
-% plotWorld(world, dim); 
-% 
-% MC_path(Vertices, BeliefNodes, Path_idx, param, world);
-% plot_path(Vertices, BeliefNodes, Path_idx, param, world);
+[~, idx] = min(PathCost);
+goal_idx = [2; idx];
+Path_idx = findpath(BeliefNodes, goal_idx);
+figure(2); hold on
+plot(start_cord(1), start_cord(2), 'Marker','s','MarkerSize',10,'MarkerEdgeColor','[0.8500 0.3250 0.0980]','MarkerFaceColor','[0.8500 0.3250 0.0980]')
+plotWorld(world, dim); 
+
+MC_path(Vertices, BeliefNodes, Path_idx, param, world);
+plot_path(Vertices, BeliefNodes, Path_idx, param, world);
 
 % % for i = 1:size(Vertices,1)
 % %     for j = 1:size(BeliefNodes{i},2)
@@ -166,6 +168,7 @@ toc
 % %         end
 % %     end  
 % % end
+
 
 %% Iteratively Search the graph
 function [Belief_queue_current, BeliefNodes, success] = SearchGraph(Edges, EdgesCost, CostValue, Edges_data, Belief_queue_current, BeliefNodes, param, world)

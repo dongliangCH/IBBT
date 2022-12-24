@@ -2,15 +2,14 @@ clear
 addpath('CS', 'DubinsCurve');
 % deter_vertix = load('deterministicVertices1');
 % deter_Vertices = deter_vertix.Vertices;
+rng(0);
+dim = 2;  
+world = createKnownWorld(dim);               % Create random world
 rand_pos = rand(1000, 2);
 rand_vel = rand(1000, 1);
-rng(0);
-dim = 2;   
-
+ 
 start_cord = [3,8,pi/6];                     % start_cord = [9,6,0];
 goal_cord = [18,18,pi/3];                       % goal_cord = [17,18,0];
-
-world = createKnownWorld(dim);               % Create random world
 
 param.dt = 0.1;
 param.velavg = 1;
@@ -26,14 +25,11 @@ gm_w = gmdistribution(mu,sigma,p);
 r = 6;                                       % Neighbor distance
 segmentLength = 5.9;                         % Maximum steplength
 
-samples = 200;
+samples = 60;
 Edges = cell(500,1);
 EdgesCost = cell(500,1);
 BeliefNodes = cell(500,1);
 
-
-TimeM = [];
-CostM = [];
 tic
 %% Sampling
 % pos = [start_cord(1:2); goal_cord(1:2)];
@@ -87,6 +83,8 @@ for l = 1:samples
 end
 vel = [start_cord(3); goal_cord(3); rand_vel(1:samples)*pi/2];
 Vertices = [pos, vel];
+% deter_vertix = load('vertices1');
+% Vertices = deter_vertix.Vertices;
 
 % Vertices = [ start_cord; goal_cord; [rand(samples, 2)*20, rand(samples, 2)*2*pi]]; 
 
@@ -140,74 +138,70 @@ node_init(3) = {[0, CostValue(1)]};                                 % cost=[cost
 node_init(4) = {[]}; node_init(5) = {[1;1]}; node_init(6) = {[]};   % children node idx, coordinate in BeliefNodes, parent_node idx
 BeliefNodes{1,1} = {node_init};
 
-%% Iteratively search the graph
-Belief_queue_current = {node_init}; Belief_queue_next = {};
+%% graph search
+Belief_queue_current = {node_init};
 queue_size_current = size(Belief_queue_current, 2);
-Time = []; BeliefTrees = {}; TreesVertices = {}; Connected_flag = 0;
+CostM = []; Time = []; BeliefTrees = {}; TreesVertices = {}; Connected_flag = 0;
 
-% for k = 1:5
-while queue_size_current > 0
-    
-    [Belief_queue_current, BeliefNodes, success] = SearchGraph(Edges, EdgesCost, CostValue, Edges_data, Belief_queue_current, BeliefNodes, param, world);
-    
+while queue_size_current > 0    
+    [Belief_queue_current, BeliefNodes, success] = SearchGraph(Edges, EdgesCost, CostValue, Edges_data, Belief_queue_current, BeliefNodes, param, world);    
     if success       
         Time = [Time toc];
         BeliefTrees = [BeliefTrees {BeliefNodes}];
         TreesVertices = [TreesVertices, {Vertices}];
         break;
-    end
-    
-    queue_size_current = size(Belief_queue_current, 2);    
-
+    end    
+    queue_size_current = size(Belief_queue_current, 2);  
 end
-    PathCost = [];
-    for i = 1:size(BeliefNodes{2},2)
-        PathCost(i) = BeliefNodes{2}{i}{3}(2);
-    end
-
-% %     [~, idx] = min(PathCost);
-% %     goal_idx = [2; idx];
-% %     Path_idx = findpath(BeliefNodes, goal_idx);
-% %     figure; hold on
-% %     plot(start_cord(1), start_cord(2), 'Marker','s','MarkerSize',10,'MarkerEdgeColor','[0.8500 0.3250 0.0980]','MarkerFaceColor','[0.8500 0.3250 0.0980]')
-% %     plotWorld(world, dim); 
-% % 
-% %     MC_path(Vertices, BeliefNodes, Path_idx, param, world);
-% %     plot_path(Vertices, BeliefNodes, Path_idx, param, world);
-% 
-% 
-%     CostM = [CostM  min(PathCost)];
-%     [Vertices, Edges, EdgesCost, Edges_data, Belief_queue_current] = RRGD_Random(Vertices, Edges, EdgesCost, Edges_data, Belief_queue_current, BeliefNodes, 40, dim, segmentLength, r, world, param);
-%     CostValue = VI(Vertices, Edges, EdgesCost, CostValue);
-%     for i =1:size(Belief_queue_current,1) 
-%         Belief_queue_current{i}{3}(2) = Belief_queue_current{i}{3}(1) + CostValue(Belief_queue_current{i}{5}(1));
-%     end
-% end
-
-toc   
-
-%%
-% for i = 1:size(Vertices,1)
-%     for j = 1:size(BeliefNodes{i},2)
-%         if ~isempty(BeliefNodes{i}{j})
-%             plotCovariance(Vertices(i,:), BeliefNodes{i}{j}{1});
-%         end
-%     end  
-% end
-
 PathCost = [];
 for i = 1:size(BeliefNodes{2},2)
     PathCost(i) = BeliefNodes{2}{i}{3}(2);
 end
-[~, idx] = min(PathCost);
-goal_idx = [2; idx];
-Path_idx = findpath(BeliefNodes, goal_idx);
-figure(2); hold on
-plot(start_cord(1), start_cord(2), 'Marker','s','MarkerSize',10,'MarkerEdgeColor','[0.8500 0.3250 0.0980]','MarkerFaceColor','[0.8500 0.3250 0.0980]')
-plotWorld(world, dim); 
+% [~, idx] = min(PathCost);
+% goal_idx = [2; idx];
+% Path_idx = findpath(BeliefNodes, goal_idx);
+% figure; hold on
+% plot(start_cord(1), start_cord(2), 'Marker','s','MarkerSize',10,'MarkerEdgeColor','[0.8500 0.3250 0.0980]','MarkerFaceColor','[0.8500 0.3250 0.0980]')
+% plotWorld(world, dim); 
+% 
+% MC_path(Vertices, BeliefNodes, Path_idx, param, world);
+% plot_path(Vertices, Path_idx, param);
+CostM = [CostM  min(PathCost)];
 
-MC_path(Vertices, BeliefNodes, Path_idx, param, world);
-plot_path(Vertices, Path_idx, param);
+for k = 1:2
+    [Vertices, Edges, EdgesCost, Edges_data, Belief_queue_current] = RRGD_RandomCopy(Vertices, Edges, EdgesCost, Edges_data, Belief_queue_current, BeliefNodes, 20, dim, segmentLength, r, world, param);
+    CostValue = VI(Vertices, Edges, EdgesCost, CostValue);
+    for i =1:size(Belief_queue_current,2) 
+        Belief_queue_current{i}{3}(2) = Belief_queue_current{i}{3}(1) + CostValue(Belief_queue_current{i}{5}(1));
+    end
+
+    while queue_size_current > 0        
+        [Belief_queue_current, BeliefNodes, success] = SearchGraph(Edges, EdgesCost, CostValue, Edges_data, Belief_queue_current, BeliefNodes, param, world);        
+        if success       
+            Time = [Time toc];
+            BeliefTrees = [BeliefTrees {BeliefNodes}];
+            TreesVertices = [TreesVertices, {Vertices}];
+            break;
+        end        
+        queue_size_current = size(Belief_queue_current, 2);        
+    end
+    PathCost = [];
+    for i = 1:size(BeliefNodes{2},2)
+        PathCost(i) = BeliefNodes{2}{i}{3}(2);
+    end
+    CostM = [CostM  min(PathCost)];
+end
+toc   
+% 
+% [~, idx] = min(PathCost);
+% goal_idx = [2; idx];
+% Path_idx = findpath(BeliefNodes, goal_idx);
+% figure(2); hold on
+% plot(start_cord(1), start_cord(2), 'Marker','s','MarkerSize',10,'MarkerEdgeColor','[0.8500 0.3250 0.0980]','MarkerFaceColor','[0.8500 0.3250 0.0980]')
+% plotWorld(world, dim); 
+% 
+% MC_path(Vertices, BeliefNodes, Path_idx, param, world);
+% plot_path(Vertices, Path_idx, param);
 
 
 

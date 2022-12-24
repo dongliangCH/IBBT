@@ -31,6 +31,7 @@ BeliefNodes = cell(500,1);
 TimeM = [];
 CostM = [];
 tic
+%% sampling
 % pos = [start_cord(1:2); goal_cord(1:2)];
 % for l = 1:samples
 %     sample_succ = 0;
@@ -71,7 +72,8 @@ Vertices = [pos,vel];
 % Vertices = [ start_cord; goal_cord; [rand(samples, 2)*20, rand(samples, 2)*2*pi]]; 
 
 % Vertices = [ start_cord; goal_cord; deter_Vertices(2:samples, :)];                       % start_cord already in deter_vertices
-       
+
+%% nominal trajectory graph       
 Vertices = Vertices(arrayfun(@(x,y) ~collision_point([x,y], world), Vertices(:,1), Vertices(:,2)), :);
 D = squareform(pdist(Vertices(:,1:2)));                                  % distance matrix
 N = size(Vertices,1);
@@ -101,33 +103,27 @@ node_init(3) = {[0, CostValue(1)]};                                 % cost=[cost
 node_init(4) = {[]}; node_init(5) = {[1;1]}; node_init(6) = {[]};   % children node idx, coordinate in BeliefNodes, parent_node idx
 BeliefNodes{1,1} = {node_init};
 
-%% Iteratively search the graph
+%% graph search
 Belief_queue_current = {node_init}; Belief_queue_next = {};
 queue_size_current = size(Belief_queue_current, 2);
 Time = []; BeliefTrees = {}; TreesVertices = {}; Connected_flag = 0;
 
 tic
-for k = 1:3
-
-while queue_size_current > 0
-    
-    [Belief_queue_current, BeliefNodes, success] = SearchGraph(Edges, EdgesCost, CostValue, Edges_data, Belief_queue_current, BeliefNodes, param, world);
-    
+while queue_size_current > 0    
+    [Belief_queue_current, BeliefNodes, success] = SearchGraph(Edges, EdgesCost, CostValue, Edges_data, Belief_queue_current, BeliefNodes, param, world);    
     if success       
         Time = [Time toc];
         BeliefTrees = [BeliefTrees {BeliefNodes}];
         TreesVertices = [TreesVertices, {Vertices}];
         break;
-    end
-    
+    end    
     queue_size_current = size(Belief_queue_current, 2);    
-
 end
-    PathCost = [];
-    for i = 1:size(BeliefNodes{2},2)
-        PathCost(i) = BeliefNodes{2}{i}{3}(2);
-    end
-
+PathCost = [];
+for i = 1:size(BeliefNodes{2},2)
+    PathCost(i) = BeliefNodes{2}{i}{3}(2);
+end
+CostM = [CostM  min(PathCost)];
 %     [~, idx] = min(PathCost);
 %     goal_idx = [2; idx];
 %     Path_idx = findpath(BeliefNodes, goal_idx);
@@ -138,15 +134,30 @@ end
 %     MC_path(Vertices, BeliefNodes, Path_idx, param, world);
 %     plot_path(Vertices, BeliefNodes, Path_idx, param, world);
 
-
-    CostM = [CostM  min(PathCost)];
-    [Vertices, Edges, EdgesCost, Edges_data, Belief_queue_current] = RRGD_Random(Vertices, Edges, EdgesCost, Edges_data, Belief_queue_current, BeliefNodes, 40, dim, segmentLength, r, world, param);
+for k = 1:1    
+    [Vertices, Edges, EdgesCost, Edges_data, Belief_queue_current] = RRGD_Random(Vertices, Edges, EdgesCost, Edges_data, Belief_queue_current, BeliefNodes, 20, dim, segmentLength, r, world, param);
     CostValue = VI(Vertices, Edges, EdgesCost, CostValue);
-    for i =1:size(Belief_queue_current,1) 
+    for i =1:size(Belief_queue_current,2) 
         Belief_queue_current{i}{3}(2) = Belief_queue_current{i}{3}(1) + CostValue(Belief_queue_current{i}{5}(1));
     end
-end
 
+    while queue_size_current > 0
+        [Belief_queue_current, BeliefNodes, success] = SearchGraph(Edges, EdgesCost, CostValue, Edges_data, Belief_queue_current, BeliefNodes, param, world);    
+        if success       
+            Time = [Time toc];
+            BeliefTrees = [BeliefTrees {BeliefNodes}];
+            TreesVertices = [TreesVertices, {Vertices}];
+            break;
+        end    
+        queue_size_current = size(Belief_queue_current, 2);    
+    end
+    PathCost = [];
+    for i = 1:size(BeliefNodes{2},2)
+        PathCost(i) = BeliefNodes{2}{i}{3}(2);
+    end
+    CostM = [CostM  min(PathCost)];
+
+end
 toc   
 
 %%
@@ -158,10 +169,6 @@ toc
 %     end  
 % end
 
-PathCost = [];
-for i = 1:size(BeliefNodes{2},2)
-    PathCost(i) = BeliefNodes{2}{i}{3}(2);
-end
 [~, idx] = min(PathCost);
 goal_idx = [2; idx];
 Path_idx = findpath(BeliefNodes, goal_idx);
