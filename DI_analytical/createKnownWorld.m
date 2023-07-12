@@ -9,7 +9,7 @@ world_high_y = 20;
 world.origincorner = [world_low_x world_low_y];
 world.endcorner = [world_high_x world_high_y];
 
-NumofObstacles = 20;
+NumofObstacles = 14;
 size_min = 1;
 size_max = 2;
 obstacle_map = zeros(200,200);
@@ -52,8 +52,8 @@ end
 
 sensor_map = zeros(200,200);
 sensor = [8  2  12 7;
-          14 9  18 13;
-          7  13 10 16;
+          14 9.5  18 14;
+          6  10.5 9 15.5;
           1  10 3  15];
 for i = 1:size(sensor,1)
     X = [sensor(i,1)  sensor(i,3)  sensor(i,3)  sensor(i,1)  sensor(i,1)];

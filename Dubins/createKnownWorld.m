@@ -53,13 +53,13 @@ end
 sensor_map = zeros(200,200);
 sensor = [8  2  12 7;
           14 9  18 13;
-          7  10 10 16;
+          7  11 10 16;
           1  10 3  15];
 for i = 1:size(sensor,1)
     X = [sensor(i,1)  sensor(i,3)  sensor(i,3)  sensor(i,1)  sensor(i,1)];
     Y = [sensor(i,2)  sensor(i,2)  sensor(i,4)  sensor(i,4)  sensor(i,2)];
     fill(X, Y, [0.1 0.4470 0.6410]);
-    
+
     for j = floor(sensor(i,1)/resolution) : ceil(sensor(i,3)/resolution)
         for k = floor(sensor(i,2)/resolution) : ceil(sensor(i,4)/resolution)
             sensor_map(j,k) = 1;

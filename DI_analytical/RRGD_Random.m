@@ -8,7 +8,7 @@ for k = 1:samples
     while sample_succ == 0
         randomPoint = zeros(1, 4);
         min_dist = 0;
-        while min_dist < 0.5
+        while min_dist < 0.6
             for j = 1:dim
                 randomPoint(1, j) = world.origincorner(j) + (world.endcorner(j) - world.origincorner(j)) * rand; %randM(rand_idx);
 %                 rand_idx = rand_idx + 1;
@@ -20,7 +20,7 @@ for k = 1:samples
         end
         new_point(1 : dim) = randomPoint(1 : dim);        
         if dim == 2
-            new_point(dim + 1 : 2 * dim) = 0.5 * (-1 + (1 - (-1))) * rand; %randMvel(randvel_idx,:);
+            new_point(dim + 1 : 2 * dim) = rand - 0.5; %randMvel(randvel_idx,:);
 %             randvel_idx = randvel_idx + 1;
         end
         
@@ -31,7 +31,7 @@ for k = 1:samples
             dist_sqr = sqr_eucl_dist(tmp_dist, dim);
             % find near neighbors   
             if dim == 2
-                gamma = 60;
+                gamma = 30;
             end      
             nun = size(Vertices, 1);
             ner = gamma * ( log(nun + 1) / nun )^(1 / dim);
@@ -47,7 +47,10 @@ for k = 1:samples
                     Edges(near_idx(i)) = {[Edges{near_idx(i)} new_verti_idx]};
                     EdgesCost{near_idx(i)} = [EdgesCost{near_idx(i)} MCost];
                     Edges_data{near_idx(i), new_verti_idx} = {meanTraj, N};
-%                     plot(meanTraj(1,:), meanTraj(2,:), 'color', 'g', 'LineWidth', 1);
+                    if param.saveAnim
+                        scatter(new_point(1), new_point(2), 12, 'k', 'filled');
+                        plot(meanTraj(1,:), meanTraj(2,:), 'color', 'g', 'LineWidth', 1);
+                    end
                     if near_idx(i) <= vertix_number_old
                         if isempty(find (vertices_queue == near_idx(i), 1))
                             vertices_queue = [vertices_queue near_idx(i)];
@@ -60,7 +63,9 @@ for k = 1:samples
                     Edges(new_verti_idx) = {[Edges{new_verti_idx} near_idx(i)]};
                     EdgesCost{new_verti_idx} = [EdgesCost{new_verti_idx} MCost];
                     Edges_data{new_verti_idx, near_idx(i)} = {meanTraj, N};
-%                     plot(meanTraj(1,:), meanTraj(2,:), 'color', 'g', 'LineWidth', 1);
+                    if param.saveAnim
+                        plot(meanTraj(1,:), meanTraj(2,:), 'color', 'g', 'LineWidth', 1);
+                    end
                 end
             end             
         end

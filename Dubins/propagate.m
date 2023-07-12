@@ -35,8 +35,8 @@ for i = 1 : N
 end
 
 % Cost
-Qk = 0.2 * blkdiag(1, 1, 1);
-Rk = 0.1 * blkdiag(1);
+Qk = 0.2 * diag([1, 1, 1]);
+Rk = 0.1;
 
 Gk = sqrt(dt) * diag([0.02 0.02 0.02]);  
 GG = repmat(Gk, [1, 1, N]);

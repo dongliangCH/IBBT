@@ -14,6 +14,7 @@ goal_cord = [18,18,0,0];                     % goal_cord = [17,18,0,0];
 
 world = createKnownWorld(dim);               % Create random world
 
+velRand = rand(500, 2);
 param.dt = 0.2;
 param.velavg = 1;
 param.chanceConstraint = 0.2;
@@ -21,10 +22,10 @@ param.chanceConstraint = 0.2;
 r = 6;                                       % Neighbor distance
 segmentLength = 5.8;                         % Maximum steplength
 
-samples = 30;
-Edges = cell(200,1);
-EdgesCost = cell(200,1);
-BeliefNodes = cell(200,1);
+samples = 100;
+Edges = cell(300,1);
+EdgesCost = cell(300,1);
+BeliefNodes = cell(300,1);
 
 tic
 pos = [start_cord(1:2); goal_cord(1:2)];
@@ -49,7 +50,7 @@ for l = 1:samples
         end
     end      
 end
-vel = [start_cord(3:4); goal_cord(3:4); 1-rand(samples, 2)*2];
+vel = [start_cord(3:4); goal_cord(3:4); 1-velRand(1:samples, :)*2];
 Vertices = [pos,vel];
 
 % pos = [start_cord(1:2); goal_cord(1:2)];
@@ -125,31 +126,31 @@ end
 % 
 % MC_path(Vertices, BeliefNodes, Path_idx, param, world);
 % plot_path(Vertices, BeliefNodes, Path_idx, param, world);
-CostM = [CostM  min(PathCost)];
+CostM = [CostM  min(PathCost)]
 
-for k = 1:2
-    [Vertices, Edges, EdgesCost, Edges_data, Belief_queue_current] = RRGD_Random(Vertices, Edges, EdgesCost, Edges_data, Belief_queue_current, BeliefNodes, 40, dim, segmentLength, r, world, param);
-    CostValue = VI(Vertices, Edges, EdgesCost, CostValue);
-    for i =1:size(Belief_queue_current,2) 
-        Belief_queue_current{i}{3}(2) = Belief_queue_current{i}{3}(1) + CostValue(Belief_queue_current{i}{5}(1));
-    end
-
-    while queue_size_current > 0        
-        [Belief_queue_current, BeliefNodes, success] = SearchGraph(Edges, EdgesCost, CostValue, Edges_data, Belief_queue_current, BeliefNodes, param, world);        
-        if success       
-            Time = [Time toc];
-            BeliefTrees = [BeliefTrees {BeliefNodes}];
-            TreesVertices = [TreesVertices, {Vertices}];
-            break;
-        end        
-        queue_size_current = size(Belief_queue_current, 2);        
-    end
-    PathCost = [];
-    for i = 1:size(BeliefNodes{2},2)
-        PathCost(i) = BeliefNodes{2}{i}{3}(2);
-    end
-    CostM = [CostM  min(PathCost)];
-end
+% for k = 1:2
+%     [Vertices, Edges, EdgesCost, Edges_data, Belief_queue_current] = RRGD_Random(Vertices, Edges, EdgesCost, Edges_data, Belief_queue_current, BeliefNodes, 40, dim, segmentLength, r, world, param);
+%     CostValue = VI(Vertices, Edges, EdgesCost, CostValue);
+%     for i =1:size(Belief_queue_current,2) 
+%         Belief_queue_current{i}{3}(2) = Belief_queue_current{i}{3}(1) + CostValue(Belief_queue_current{i}{5}(1));
+%     end
+%     queue_size_current = size(Belief_queue_current, 2);
+%     while queue_size_current > 0        
+%         [Belief_queue_current, BeliefNodes, success] = SearchGraph(Edges, EdgesCost, CostValue, Edges_data, Belief_queue_current, BeliefNodes, param, world);        
+%         if success       
+%             Time = [Time toc];
+%             BeliefTrees = [BeliefTrees {BeliefNodes}];
+%             TreesVertices = [TreesVertices, {Vertices}];
+%             break;
+%         end        
+%         queue_size_current = size(Belief_queue_current, 2);        
+%     end
+%     PathCost = [];
+%     for i = 1:size(BeliefNodes{2},2)
+%         PathCost(i) = BeliefNodes{2}{i}{3}(2);
+%     end
+%     CostM = [CostM  min(PathCost)];
+% end
 toc   
 % [~, idx] = min(PathCost);
 % goal_idx = [2; idx];

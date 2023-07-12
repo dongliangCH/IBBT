@@ -41,7 +41,7 @@ for k = 1:samples
                 dist_sqr = sqr_eucl_dist(tmp_dist, dim);
                 % find near neighbors   
                 if dim == 2
-                    gamma = 40;
+                    gamma = 30;
                 end      
                 nun = size(Vertices, 1);
                 ner = gamma * ( log(nun + 1) / nun )^(1 / dim);
@@ -58,13 +58,19 @@ for k = 1:samples
                 Edges(idx) = {[Edges{idx} new_verti_idx]};
                 EdgesCost{idx} = [EdgesCost{idx}, MCost];
                 Edges_data{idx, new_verti_idx} = {meanTraj};
-%                         plot(meanTraj(1,:), meanTraj(2,:), 'color', 'g', 'LineWidth', 1);
+                if param.saveAnim
+                    scatter(new_point(1), new_point(2), 12, 'k', 'filled');
+                    plot(meanTraj(1,:), meanTraj(2,:), 'color', 'g', 'LineWidth', 1);
+                end
                 [meanTraj, MCost] = dubins_curve(new_point, Vertices(idx, :), param.radi, param.dt, 1); 
                 if ~MeanCollisionCheck(meanTraj(1:2, :), world, dim)
                     Edges(new_verti_idx) = {[Edges{new_verti_idx} idx]};
                     EdgesCost{new_verti_idx} = [EdgesCost{new_verti_idx} MCost];
                     Edges_data{new_verti_idx,idx} = {meanTraj};
-%                             plot(meanTraj(1,:), meanTraj(2,:), 'color', 'g', 'LineWidth', 1);
+                    if param.saveAnim
+                        scatter(new_point(1), new_point(2), 12, 'k', 'filled');
+                        plot(meanTraj(1,:), meanTraj(2,:), 'color', 'g', 'LineWidth', 1);
+                    end
                 end
                 
                 size_near = size(near_idx, 1);   
@@ -75,7 +81,10 @@ for k = 1:samples
                             Edges(near_idx(i)) = {[Edges{near_idx(i)} new_verti_idx]};
                             EdgesCost{near_idx(i)} = [EdgesCost{near_idx(i)} MCost];
                             Edges_data{near_idx(i), new_verti_idx} = {meanTraj};
-%                             plot(meanTraj(1,:), meanTraj(2,:), 'color', 'g', 'LineWidth', 1);
+                            if param.saveAnim
+                                scatter(new_point(1), new_point(2), 12, 'k', 'filled');
+                                plot(meanTraj(1,:), meanTraj(2,:), 'color', 'g', 'LineWidth', 1);
+                            end
                             if near_idx(i) <= vertix_number_old
                                 if isempty(find (vertices_queue == near_idx(i), 1))
                                     vertices_queue = [vertices_queue near_idx(i)];
@@ -87,7 +96,10 @@ for k = 1:samples
                             Edges(new_verti_idx) = {[Edges{new_verti_idx} near_idx(i)]};
                             EdgesCost{new_verti_idx} = [EdgesCost{new_verti_idx} MCost];
                             Edges_data{new_verti_idx, near_idx(i)} = {meanTraj};
-%                             plot(meanTraj(1,:), meanTraj(2,:), 'color', 'g', 'LineWidth', 1);
+                            if param.saveAnim
+                                scatter(new_point(1), new_point(2), 12, 'k', 'filled');
+                                plot(meanTraj(1,:), meanTraj(2,:), 'color', 'g', 'LineWidth', 1);
+                            end
                         end
                     end
                 end             

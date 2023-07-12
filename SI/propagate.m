@@ -16,15 +16,14 @@ Bk = [1 0; 0 1];
 Gk = sqrt(dt) * diag([0.06 0.06]);
 
 % Cost
-Qk = 2 * blkdiag(2, 2);
-Rk = 1 * blkdiag(2, 2);
+Qk = 2 * diag([2, 2]);
+Rk = 1 * diag([2, 2]);
 
 
 %% Kalman filter
 % Observation model
 
 Ck = eye(2); 
-CC = repmat(Ck, [1, 1, N + 1]);
 DD = zeros(ny, ny, N + 1);
 
 xbar_temp = xbar * world.scale;

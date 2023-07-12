@@ -1,5 +1,5 @@
 function collisionProb = montecarlo1(MCnum, xbar, PP, N, world, param)
-% rng(0)
+rng(0)
 collisionProb = 0;
 for k = 1:N+1
     collision_num = 0;

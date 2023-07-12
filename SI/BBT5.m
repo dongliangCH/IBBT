@@ -10,7 +10,7 @@ P0 = diag([0.10, 0.08]);
 PtildePrior0 = 0.6 * P0.* diag([1 1]);       % Initial estimation error covariance
 PhatPrior0 = P0 - PtildePrior0;              % Initial estimated state covariance
 
-goal_cord = [18,18];                         % goal_cord = [17,18,0,0];
+goal_cord = [18,10];                         % goal_cord = [17,18,0,0];
 
 world = createKnownWorld(dim);               % Create random world
 
@@ -18,10 +18,10 @@ param.dt = 0.2;
 param.velavg = 1;
 param.chanceConstraint = 0.1;
 
-r = 6;                                       % Neighbor distance
-segmentLength = 5.8;                         % Maximum steplength
+r = 4;                                       % Neighbor distance
+segmentLength = 3.8;                         % Maximum steplength
 
-samples = 40;
+samples = 60;
 Edges = cell(300,1);
 EdgesCost = cell(300,1);
 BeliefNodes = cell(300,1);
@@ -97,7 +97,7 @@ BeliefNodes{1,1} = {node_init};
 %% graph search
 Belief_queue_current = {node_init};
 queue_size_current = size(Belief_queue_current, 2);
-CostM = []; Time = []; BeliefTrees = {}; TreesVertices = {}; Connected_flag = 0;
+CostM = []; Time = []; BeliefTrees = {}; TreesVertices = {};
 
 while queue_size_current > 0    
     [Belief_queue_current, BeliefNodes, success] = SearchGraph(Edges, EdgesCost, CostValue, Edges_data, Belief_queue_current, BeliefNodes, param, world);    
@@ -125,13 +125,14 @@ end
 % plot_path(Vertices, BeliefNodes, Path_idx, param, world);
 CostM = [CostM  min(PathCost)];
 
-for k = 1:2
-    [Vertices, Edges, EdgesCost, Edges_data, Belief_queue_current] = RRGD_Random(Vertices, Edges, EdgesCost, Edges_data, Belief_queue_current, BeliefNodes, 40, dim, segmentLength, r, world, param);
+for k = 1:6
+    [Vertices, Edges, EdgesCost, Edges_data, Belief_queue_current] = RRGD_Random(Vertices, Edges, EdgesCost, Edges_data, Belief_queue_current, BeliefNodes, 20, dim, segmentLength, r, world, param);
     CostValue = VI(Vertices, Edges, EdgesCost, CostValue);
     for i =1:size(Belief_queue_current,2) 
         Belief_queue_current{i}{3}(2) = Belief_queue_current{i}{3}(1) + CostValue(Belief_queue_current{i}{5}(1));
     end
 
+    queue_size_current = size(Belief_queue_current, 2);
     while queue_size_current > 0        
         [Belief_queue_current, BeliefNodes, success] = SearchGraph(Edges, EdgesCost, CostValue, Edges_data, Belief_queue_current, BeliefNodes, param, world);        
         if success       
