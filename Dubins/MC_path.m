@@ -5,7 +5,7 @@ plotCovariance(Vertices(Path_idx(1, 1), :)', BeliefNodes{Path_idx(1, 1)}{Path_id
 rng(0);
 P0 = BeliefNodes{Path_idx(1, 1)}{Path_idx(2, 1)}{1};
 PtildePrior0 = BeliefNodes{Path_idx(1, 1)}{Path_idx(2, 1)}{2};
-mc_num = 20;
+mc_num = 50;
 
 for k = 1:mc_num
 

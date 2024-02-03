@@ -19,7 +19,7 @@ velRand = rand(500, 2)-0.5;
 param.dt = 0.2;
 param.velavg = 1;
 param.chanceConstraint = 0.1;
-param.saveAnim = 1;
+param.saveAnim = 0;
 
 if param.saveAnim
     title("Planning Environment")
@@ -32,7 +32,7 @@ end
 r = 6;                                         % Neighbor distance
 segmentLength = 5.8;                           % Maximum steplength
 
-samples = 60;
+samples = 200;
 Edges = cell(500,1);
 EdgesCost = cell(500,1);
 BeliefNodes = cell(500,1);
@@ -184,6 +184,16 @@ if param.saveAnim
     im{size(im,2) + 1} = frame2im(frame{size(im,2) + 1});
     close;
 end
+
+    [~, idx] = min(PathCost);
+    goal_idx = [2; idx];
+    Path_idx = findpath(BeliefNodes, goal_idx);    
+    fig2 = figure(2); hold on
+    plot(start_cord(1), start_cord(2), 'Marker','s','MarkerSize',10,'MarkerEdgeColor','[0.8500 0.3250 0.0980]','MarkerFaceColor','[0.8500 0.3250 0.0980]')
+    plot(goal_cord(1), goal_cord(2), 'Marker','o','MarkerSize',10,'MarkerEdgeColor','[0.8500 0.3250 0.0980]','MarkerFaceColor','[0.8500 0.3250 0.0980]')
+    plotWorld(world, dim); 
+    MC_path(Vertices, BeliefNodes, Path_idx, param, world);
+    plot_path(Vertices, BeliefNodes, Path_idx, param, world);
 
 
 %% Additional Batches

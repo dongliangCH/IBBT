@@ -30,7 +30,7 @@ r = 6;   % 5
 % Maximum steplength
 segmentLength = 5.8;  % 4.8
 
-samples = 100;
+samples = 50;
 Vertices = start_cord;
 Edges = cell(samples,1);
 

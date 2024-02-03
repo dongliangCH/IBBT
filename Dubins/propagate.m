@@ -119,7 +119,7 @@ CovCost = dt * Jc;
 
 %% Monte Carlo
 % Number of monte carlo trials to display (can be zero)
-MCnum = 40;
+MCnum = 50;
 
 % figure(10); 
 % hold on
